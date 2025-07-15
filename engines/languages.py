@@ -1051,3 +1051,7 @@ lang_directionality = {
     'it': 'ltr',
     'de': 'ltr'
 }
+
+
+vertexai_gemini = gemini
+
