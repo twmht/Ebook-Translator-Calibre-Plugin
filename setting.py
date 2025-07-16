@@ -150,6 +150,40 @@ class TranslationSetting(QDialog):
         divider.setFrameShadow(QFrame.Sunken)
         return divider
 
+    def reset_to_defaults(self):
+        """
+        Resets all plugin settings to their default values after user confirmation.
+        """
+        # 步驟 1: 彈出確認對話框，防止誤觸
+        if (
+            self.alert.ask(
+                _(
+                    "Are you sure you want to reset all settings to their default values? "
+                    "This action cannot be undone and the settings window will close."
+                )
+            )
+            != "yes"
+        ):
+            return  # 如果使用者選擇 "No"，則不做任何事
+
+        # 步驟 2: 清除所有使用者自訂的設定
+        # JSONConfig 物件的行為類似字典，呼叫 clear() 會移除所有鍵值對
+        self.config.preferences.clear()
+
+        # 步驟 3: 將這個「空的」設定寫入檔案。
+        # 這樣下次 get_config() 就會因為找不到任何自訂值而完全使用 defaults
+        self.config.commit()
+
+        # 步驟 4: 告知使用者操作成功
+        self.alert.pop(
+            _("All settings have been reset to default. The window will now close.")
+        )
+
+        # 步驟 5: 關閉設定視窗
+        # 最簡單可靠的方式是關閉視窗，讓使用者重新打開。
+        # 重新打開時，所有 UI 元件都會從（現在是預設的）設定中重新載入。
+        self.done(1)  # 使用 done() 並傳入一個結果碼來關閉 QDialog
+
     def main_layout(self):
         layout = QVBoxLayout(self)
 
@@ -160,7 +194,28 @@ class TranslationSetting(QDialog):
         self.tabs.setStyleSheet("QTabBar::tab {min-width:120px;}")
 
         layout.addWidget(self.tabs)
-        layout.addWidget(Footer())
+        # --- 新增的程式碼區塊 ---
+        # 建立一個包含重設按鈕和 Footer 的底部欄
+        bottom_bar = QWidget()
+        bottom_layout = QHBoxLayout(bottom_bar)
+        bottom_layout.setContentsMargins(0, 10, 0, 0)  # 增加一點上方間距
+
+        reset_button = QPushButton(_("Reset to Defaults"))
+        reset_button.setToolTip(
+            _(
+                "Reset all settings on all tabs to their original values. "
+                "This cannot be undone."
+            )
+        )
+        reset_button.clicked.connect(self.reset_to_defaults)
+
+        bottom_layout.addWidget(reset_button)
+        bottom_layout.addStretch(1)  # 將按鈕推到左邊
+        bottom_layout.addWidget(Footer())  # 將原本的 Footer 移到這裡
+
+        layout.addWidget(bottom_bar)  # 將整個底部欄加入主佈局
+        # --- 程式碼區塊結束 ---
+        # layout.addWidget(Footer())
 
         def save_setting(index):
             actions = {
@@ -683,8 +738,16 @@ class TranslationSetting(QDialog):
             genai_model_list.addItems(models)
             genai_model_list.addItem(_("Custom"))
             # Fill data according to the passed model or the default model
+            # if model is None:
+            #     model = config.get("model")
+            # --- 修正邏輯從這裡開始 ---
             if model is None:
+                # 1. 先嘗試從 config 獲取
                 model = config.get("model")
+                # 2. 如果 config 中沒有，則從引擎類別本身獲取預設值
+                if model is None:
+                    model = self.current_engine.model
+            # --- 修正邏輯結束 ---
             elif model != _("Custom"):
                 config.update(model=model)
             if model in models:

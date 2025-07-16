@@ -59,13 +59,16 @@ class VertexAITranslate(GoogleTranslate, GenAI):
         "- Apply a humorous, lively style resembling the discourse of Taiwanese PTT.\n"
     )
 
+    # prompt = (
+    #     "你是一名負責翻譯英文電子書的專家，但你的翻譯不僅僅是逐字翻譯，而是要用自己的話來表達作者的意圖，並且保持與作者旨意一致。\n"
+    #     "你的文筆需要如台灣作家九把刀一般，富有情感且直擊人心。翻譯時要讓讀者感受到文字的生命力和感染力。 並確保符合九把刀的文風和提示中的要求\n。"
+    #     "You are tasked with translating an <slang> e-book passage into <tlang>, but rather than a literal translation"
+    # )
     temperature: float = 0.5
     top_p: float = 1.0
     top_k = 1
     # Provide a list of common Vertex AI models
     models: list[str] = [
-        # "gemini-2.5-flash-lite-preview-06-17",
-        # "gemini-2.5-pro",
         "gemini-2.5-flash-lite-preview-06-17",
         "gemini-2.5-flash",
         "gemini-1.5-pro-001",
