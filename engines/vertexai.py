@@ -51,29 +51,28 @@ class VertexAITranslate(GoogleTranslate, GenAI):
         ]
     }
 
-    prompt = (
-        "You are tasked with translating an <slang> e-book passage into <tlang>, but rather than a literal translation, focus on capturing the essence of the author's words in a humorous style akin to Taiwanese PTT users.\n"
-        "Your translation should:\n"
-        "- Stay true to the author's intended meaning and message.\n"
-        "- Use expressive language that makes readers feel immersed in the content.\n"
-        "- Apply a humorous, lively style resembling the discourse of Taiwanese PTT.\n"
-    )
-
     # prompt = (
-    #     "你是一名負責翻譯英文電子書的專家，但你的翻譯不僅僅是逐字翻譯，而是要用自己的話來表達作者的意圖，並且保持與作者旨意一致。\n"
-    #     "你的文筆需要如台灣作家九把刀一般，富有情感且直擊人心。翻譯時要讓讀者感受到文字的生命力和感染力。 並確保符合九把刀的文風和提示中的要求\n。"
-    #     "You are tasked with translating an <slang> e-book passage into <tlang>, but rather than a literal translation"
+    #     "You are tasked with translating an <slang> e-book passage into <tlang>, but rather than a literal translation, focus on capturing the essence of the author's words in a humorous style akin to Taiwanese PTT users.\n"
+    #     "Your translation should:\n"
+    #     "- Stay true to the author's intended meaning and message.\n"
+    #     "- Use expressive language that makes readers feel immersed in the content.\n"
+    #     "- Apply a humorous, lively style resembling the discourse of Taiwanese PTT.\n"
     # )
+
+    prompt = (
+        "你是一名負責翻譯英文電子書的專家，但你的翻譯不僅僅是逐字翻譯，而是要用自己的話來表達作者的意圖，並且保持與作者旨意一致。\n"
+        "你的文筆需要如台灣作家九把刀一般，富有情感且直擊人心。翻譯時要讓讀者感受到文字的生命力和感染力。 並確保符合九把刀的文風和提示中的要求\n。"
+        "You are tasked with translating an <slang> e-book passage into <tlang>, but rather than a literal translation"
+    )
     temperature: float = 0.5
     top_p: float = 1.0
     top_k = 1
     # Provide a list of common Vertex AI models
     models: list[str] = [
-        "gemini-2.5-flash-lite-preview-06-17",
+        "gemini-2.0-flash-lite",
         "gemini-2.5-flash",
-        "gemini-1.5-pro-001",
-        "gemini-1.0-pro-002",
-        "gemini-1.0-pro",
+        "gemini-2.5-flash-lite-preview-06-17",
+        "gemini-2.5-pro",
     ]
     model: str | None = models[0]
 
@@ -143,13 +142,20 @@ class VertexAITranslate(GoogleTranslate, GenAI):
 
     def get_endpoint(self):
         project_id = self._get_project_id()
-        file_config = self._get_config_from_file()
-        location = file_config.get(
-            "location", self.config.get("location", "us-central1")
-        )
+        # 從設定檔讀取 location，預設為 us-central1
+        location = self.config.get("location", "us-central1")
 
-        base_url = f"https://{location}-aiplatform.googleapis.com/v1"
+        # --- 新的 URL 格式判斷邏輯 ---
+        if location == "global":
+            # 使用 global 端點格式
+            base_url = "https://aiplatform.googleapis.com/v1"
+        else:
+            # 使用 region-specific 端點格式
+            base_url = f"https://{location}-aiplatform.googleapis.com/v1"
+        # --- 邏輯結束 ---
+
         model_path = f"projects/{project_id}/locations/{location}/publishers/google/models/{self.model}"
+        print(f"{base_url}/{model_path}:generateContent")
 
         return f"{base_url}/{model_path}:generateContent"
 
