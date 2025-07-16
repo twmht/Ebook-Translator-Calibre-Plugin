@@ -39,7 +39,7 @@ from qt.core import (
     QThread,
     pyqtSlot,
 )
-from calibre.utils.logging import Log
+from calibre.utils.logging import default_log as log
 from calibre.gui2 import error_dialog
 
 from .lib.config import get_config
@@ -78,7 +78,7 @@ class ModelWorker(QObject):
 
     def __init__(self):
         QObject.__init__(self)
-        self.log = Log()
+        self.log = log
         self.start.connect(self.get_models)
 
     @pyqtSlot(object)
