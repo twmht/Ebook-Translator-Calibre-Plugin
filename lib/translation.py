@@ -121,14 +121,14 @@ class Translation:
         * https://ai.youdao.com/DOCSIRMA/html/trans/api/wbfy/index.html
         * https://api.fanyi.baidu.com/doc/21
         """
-        log_message = (
-            f"\n{'=' * 20} SENDING TO TRANSLATE API {'=' * 20}\n"
-            f"Row: {row}\n"
-            f"Character Count: {len(text)}\n"
-            f"Content to Translate:\n---\n{text[:1000]}...\n---\n"  # 只顯示前1000個字元以避免 Log 過長
-            f"{'=' * 60}\n"
-        )
-        print(log_message)
+        # log_message = (
+        #     f"\n{'=' * 20} SENDING TO TRANSLATE API {'=' * 20}\n"
+        #     f"Row: {row}\n"
+        #     f"Character Count: {len(text)}\n"
+        #     f"Content to Translate:\n---\n{text[:1000]}...\n---\n"  # 只顯示前1000個字元以避免 Log 過長
+        #     f"{'=' * 60}\n"
+        # )
+        # print(log_message)
         if self.cancel_request():
             raise TranslationCanceled(_("Translation canceled."))
         try:
@@ -173,6 +173,18 @@ class Translation:
         self.streaming("")
         self.streaming(_("Translating..."))
         text = self.glossary.replace(paragraph.original)
+        # --- 新增的檢查邏輯 ---
+        # 如果待翻譯的文本在移除頭尾空白後是空的，則直接跳過翻譯。
+        # 我們將其翻譯設為空字串，並標記為已快取（以避免重試），然後返回。
+        if not text.strip():
+            self.log(
+                f"Skipping translation for empty content. Row: {paragraph.row}, "
+                f"Original: '{paragraph.original[:50]}...'"
+            )
+            paragraph.translation = ""  # 將翻譯設為空字串
+            paragraph.is_cache = True  # 標記為已處理，避免後續操作再次處理它
+            return
+        # --- 檢查邏輯結束 ---
         translation = self.translate_text(paragraph.row, text)
         # Process streaming text
         if isinstance(translation, GeneratorType):
