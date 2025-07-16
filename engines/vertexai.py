@@ -30,6 +30,8 @@ class VertexAITranslate(GoogleTranslate, GenAI):
     sampling = "temperature"
     stream = False
 
+    request_timeout: float = 180.0
+
     _tool_decls = {
         "function_declarations": [
             {
@@ -50,10 +52,13 @@ class VertexAITranslate(GoogleTranslate, GenAI):
     }
 
     prompt = (
-        "You are a meticulous translator. Translate the given content from <slang> to <tlang>. "
-        "Your response must be only the translated text, without any additional explanations or prefixes."
-        "你是一個專業的翻譯者，用台灣人的口吻，請你翻譯這段文字"
+        "You are tasked with translating an <slang> e-book passage into <tlang>, but rather than a literal translation, focus on capturing the essence of the author's words in a humorous style akin to Taiwanese PTT users.\n"
+        "Your translation should:\n"
+        "- Stay true to the author's intended meaning and message.\n"
+        "- Use expressive language that makes readers feel immersed in the content.\n"
+        "- Apply a humorous, lively style resembling the discourse of Taiwanese PTT.\n"
     )
+
     temperature: float = 0.5
     top_p: float = 1.0
     top_k = 1
@@ -61,7 +66,8 @@ class VertexAITranslate(GoogleTranslate, GenAI):
     models: list[str] = [
         # "gemini-2.5-flash-lite-preview-06-17",
         # "gemini-2.5-pro",
-        "gemini-2.0-flash-lite",
+        "gemini-2.5-flash-lite-preview-06-17",
+        "gemini-2.5-flash",
         "gemini-1.5-pro-001",
         "gemini-1.0-pro-002",
         "gemini-1.0-pro",
@@ -77,6 +83,10 @@ class VertexAITranslate(GoogleTranslate, GenAI):
         self.top_k = self.config.get("top_k", self.top_k)
         self.top_p = self.config.get("top_p", self.top_p)
         self.model = self.config.get("model", self.model)
+
+        request_timeout_config = self.config.get("request_timeout")
+        if request_timeout_config is not None:
+            self.request_timeout = request_timeout_config
 
     # Implement the abstract method from GenAI
     def get_models(self) -> list[str]:
@@ -157,7 +167,13 @@ class VertexAITranslate(GoogleTranslate, GenAI):
                 " Ensure that placeholders matching the pattern {{id_\\d+}} "
                 "in the content are retained."
             )
-        print(prompt)
+            # 新增關於分隔符的指示
+            prompt += (
+                " The input text may contain multiple paragraphs separated by "
+                f'double newlines ("{self.separator.replace(chr(10), r"n")}"). '
+                "It is crucial that you preserve these separators in the "
+                "translated output to maintain the original document structure."
+            )
         return prompt
 
     def get_body(self, text):

@@ -148,7 +148,6 @@ class TranslationSetting(QDialog):
         divider = QFrame()
         divider.setFrameShape(QFrame.HLine)
         divider.setFrameShadow(QFrame.Sunken)
-        # divider.setFrameStyle(QFrame.HLine | QFrame.Sunken)
         return divider
 
     def main_layout(self):
@@ -294,25 +293,62 @@ class TranslationSetting(QDialog):
 
         # Merge Translate
         merge_group = QGroupBox("%s %s" % (_("Merge to Translate"), _("(Beta)")))
-        merge_layout = QHBoxLayout(merge_group)
+        merge_layout = QGridLayout(merge_group)
+
         merge_enabled = QCheckBox(_("Enable"))
+        self.merge_strategy = QComboBox()
+        self.merge_strategy.addItem(_("By Character Count"), "length")
+        self.merge_strategy.addItem(_("By HTML File"), "file")
+
         self.merge_length = QSpinBox()
         self.merge_length.setRange(1, 99999)
-        merge_layout.addWidget(merge_enabled)
-        merge_layout.addWidget(self.merge_length)
-        merge_layout.addWidget(
-            QLabel(_("The number of characters to translate at once."))
+        self.merge_length_label = QLabel(
+            _("The number of characters to translate at once.")
         )
-        merge_layout.addStretch(1)
+
+        merge_layout.addWidget(merge_enabled, 0, 0, 1, 4)
+        merge_layout.addWidget(QLabel(_("Batching Strategy:")), 1, 0, Qt.AlignRight)
+        merge_layout.addWidget(self.merge_strategy, 1, 1)
+        merge_layout.addWidget(self.merge_length, 1, 2)
+        merge_layout.addWidget(self.merge_length_label, 1, 3)
+        merge_layout.setColumnStretch(3, 1)
+
         layout.addWidget(merge_group)
 
         self.disable_wheel_event(self.merge_length)
+        self.disable_wheel_event(self.merge_strategy)
 
-        self.merge_length.setValue(self.config.get("merge_length"))
         merge_enabled.setChecked(self.config.get("merge_enabled"))
-        merge_enabled.clicked.connect(
-            lambda checked: self.config.update(merge_enabled=checked)
+        self.merge_length.setValue(self.config.get("merge_length"))
+
+        saved_strategy = self.config.get("merge_strategy", "length")
+        strategy_index = self.merge_strategy.findData(saved_strategy)
+        self.merge_strategy.setCurrentIndex(
+            strategy_index if strategy_index != -1 else 0
         )
+
+        def toggle_merge_controls(checked):
+            self.config.update(merge_enabled=checked)
+            self.merge_strategy.setEnabled(checked)
+            is_length_strategy = self.merge_strategy.currentData() == "length"
+            self.merge_length.setVisible(checked and is_length_strategy)
+            self.merge_length_label.setVisible(checked and is_length_strategy)
+
+        def on_strategy_change(index):
+            strategy = self.merge_strategy.itemData(index)
+            self.config.update(merge_strategy=strategy)
+            is_length_strategy = strategy == "length"
+            self.merge_length.setVisible(
+                merge_enabled.isChecked() and is_length_strategy
+            )
+            self.merge_length_label.setVisible(
+                merge_enabled.isChecked() and is_length_strategy
+            )
+
+        merge_enabled.clicked.connect(toggle_merge_controls)
+        self.merge_strategy.currentIndexChanged.connect(on_strategy_change)
+
+        toggle_merge_controls(merge_enabled.isChecked())
 
         # Network Proxy
         proxy_group = QGroupBox(_("HTTP Proxy"))
@@ -478,6 +514,12 @@ class TranslationSetting(QDialog):
         keys_layout.addWidget(auto_change)
         layout.addWidget(self.keys_group)
 
+        self.api_keys.textChanged.connect(
+            lambda: auto_change.setVisible(
+                len(self.api_keys.toPlainText().strip().split("\n")) > 1
+            )
+        )
+
         # Credential File for Vertex AI
         self.credential_group = QGroupBox(_("Credential File"))
         self.credential_group.setVisible(False)
@@ -499,12 +541,6 @@ class TranslationSetting(QDialog):
                 self.credential_path_entry.setText(path)
 
         credential_button.clicked.connect(choose_credential_file)
-
-        self.api_keys.textChanged.connect(
-            lambda: auto_change.setVisible(
-                len(self.api_keys.toPlainText().strip().split("\n")) > 1
-            )
-        )
 
         # preferred Language
         language_group = QGroupBox(_("Preferred Language"))
@@ -788,7 +824,7 @@ class TranslationSetting(QDialog):
             self.source_lang.refresh.emit(
                 self.current_engine.lang_codes.get("source"),
                 source_lang,
-                not issubclass(self.current_engine, CustomTranslate),
+                not isinstance(self.current_engine, CustomTranslate),
             )
             target_lang = config.get("target_lang")
             self.target_lang.refresh.emit(
@@ -995,7 +1031,6 @@ class TranslationSetting(QDialog):
 
         position_map = dict(enumerate(["below", "above", "right", "left", "only"]))
         position_rmap = dict((v, k) for k, v in position_map.items())
-        # Add alias for compatibility with lower versions.
         position_rmap["after"] = 0
         position_rmap["before"] = 1
         position_btn_group = QButtonGroup(position_group)
@@ -1125,8 +1160,8 @@ class TranslationSetting(QDialog):
         self.glossary_path.setText(self.config.get("glossary_path"))
 
         def choose_glossary_file():
-            path = QFileDialog.getOpenFileName(filter="Text files (*.txt)")
-            self.glossary_path.setText(path[0])
+            path, __ = QFileDialog.getOpenFileName(filter="Text files (*.txt)")
+            self.glossary_path.setText(path)
 
         glossary_choose.clicked.connect(choose_glossary_file)
 
