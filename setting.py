@@ -575,17 +575,35 @@ class TranslationSetting(QDialog):
             )
         )
 
-        # Credential File for Vertex AI
-        self.credential_group = QGroupBox(_("Credential File"))
+        # --- 以下是 Credential Group 的完整修正 ---
+        self.credential_group = QGroupBox(_("Credential Settings"))
         self.credential_group.setVisible(False)
-        credential_layout = QHBoxLayout(self.credential_group)
+        # 將佈局從 QHBoxLayout 改為 QFormLayout
+        credential_layout = QFormLayout(self.credential_group)
+        self.apply_form_layout_policy(credential_layout)  # 應用對齊策略
+
+        # Credential File
+        credential_widget = QWidget()
+        credential_widget_layout = QHBoxLayout(credential_widget)
+        credential_widget_layout.setContentsMargins(0, 0, 0, 0)
         self.credential_path_entry = QLineEdit()
         self.credential_path_entry.setPlaceholderText(
             _("Path to your credential JSON file")
         )
         credential_button = QPushButton(_("Choose"))
-        credential_layout.addWidget(self.credential_path_entry)
-        credential_layout.addWidget(credential_button)
+        credential_widget_layout.addWidget(self.credential_path_entry)
+        credential_widget_layout.addWidget(credential_button)
+
+        # Location
+        self.vertexai_location_entry = QLineEdit()
+        self.vertexai_location_entry.setPlaceholderText(
+            _("e.g., us-central1 or global")
+        )
+
+        # 使用 addRow 來新增元件
+        credential_layout.addRow(_("Credential File:"), credential_widget)
+        credential_layout.addRow(_("Location:"), self.vertexai_location_entry)
+
         layout.addWidget(self.credential_group)
 
         def choose_credential_file():
@@ -596,6 +614,7 @@ class TranslationSetting(QDialog):
                 self.credential_path_entry.setText(path)
 
         credential_button.clicked.connect(choose_credential_file)
+        # --- Credential Group 修正結束 ---
 
         # preferred Language
         language_group = QGroupBox(_("Preferred Language"))
@@ -882,6 +901,8 @@ class TranslationSetting(QDialog):
             if is_vertex:
                 cred_path = config.get("credential_path", "")
                 self.credential_path_entry.setText(cred_path)
+                location = config.get("location", "us-central1")
+                self.vertexai_location_entry.setText(location)
             # Refresh preferred language
             source_lang = config.get("source_lang")
             self.source_lang.refresh.emit(
@@ -1503,6 +1524,12 @@ class TranslationSetting(QDialog):
                 config.update(credential_path=cred_path)
             elif "credential_path" in config:
                 del config["credential_path"]
+                # 儲存 location 的值
+            location = self.vertexai_location_entry.text().strip()
+            if location:
+                config.update(location=location)
+            elif "location" in config:
+                del config["location"]
 
         # GenAI preference
         if issubclass(self.current_engine, GenAI):
