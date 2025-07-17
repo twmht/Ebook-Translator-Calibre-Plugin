@@ -60,10 +60,18 @@ class VertexAITranslate(GoogleTranslate, GenAI):
     # )
 
     prompt = (
-        "你是一名負責翻譯英文電子書的專家，但你的翻譯不僅僅是逐字翻譯，而是要用自己的話來表達作者的意圖，並且保持與作者旨意一致。\n"
-        "你的文筆需要如台灣作家九把刀一般，富有情感且直擊人心。翻譯時要讓讀者感受到文字的生命力和感染力。 並確保符合九把刀的文風和提示中的要求\n。"
-        "You are tasked with translating an <slang> e-book passage into <tlang>, but rather than a literal translation"
+        "You are tasked with translating an <slang> e-book passage into <tlang>, but rather than a literal translation, acting as a creative translator\n"
+        "However, the translation is not a word-for-word conversion; instead, convey the author's intent using original expressions, ensuring that the essence and intention of the author are consistently represented.\n"
+        "Your writing style should incorporate the following attributes:\n"
+        "The translation should embody the author's intent, expressed through your unique style:\n"
+        '1. **Conversational and Localized Language**: Employ informal, internet-savvy language filled with contemporary Taiwanese slang and "memes" to make readers feel like they\'re listening to a friend narrate a story.\n'
+        "2. **Intense Emotional Rendering**: Your writing must be highly infectious, using straightforward language and rapid pacing to heighten reader emotions, whether evoking laughter, moving sentiments, or thrilling climaxes.\n"
+        "3. **Chuunibyou Elements**: Characters and narratives should display youthful fantasy elements marked by exaggerated self-awareness and imaginative exaggeration, infused with innocence, obsession, and boundless romanticism.\n"
+        "4. **Cinematic Narrative Style**: Write to evoke vivid mental imagery, delivering a dynamic and engaging narrative akin to a cinematic experience.\n"
+        "5. **Humor and Sensitivity**: Blend humor naturally and communicate emotions sincerely to achieve a relatable style that resonates with readers.\n"
+        "6. **Social Observation and Reflection**: Incorporate insight and reflection on social trends, not limited to emotional portrayal but including profound reflections on human nature and society.\n"
     )
+
     temperature: float = 0.5
     top_p: float = 1.0
     top_k = 1
