@@ -5,7 +5,6 @@ from typing import Any
 
 from lxml import etree
 from calibre import prepare_string_for_xml as xml_escape
-from calibre.utils.logging import default_log as log
 
 from .utils import (
     ns,
@@ -290,13 +289,7 @@ class PageElement(Element):
         if self.original_color is not None:
             for element in self.element.iter():
                 if element.text is not None or len(list(element)) > 0:
-                    # Some users encountered errors when trying to set the
-                    # style on certain child elements, e.g., comment nodes.
-                    # So we simply skip those elements.
-                    try:
-                        element.set("style", "color:%s" % self.original_color)
-                    except TypeError:
-                        log.warn("Failed to set style on element:", get_string(element))
+                    element.set("style", "color:%s" % self.original_color)
         if translation is None:
             if self.position in ("left", "right"):
                 self.element.addnext(self._create_table())

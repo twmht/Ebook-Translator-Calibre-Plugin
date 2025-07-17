@@ -4,7 +4,7 @@ from qt.core import (
     pyqtSignal, pyqtSlot, Qt, QLabel, QDialog, QVBoxLayout, QStackedLayout,
     QWidget, QPushButton, QProgressBar, QFormLayout, QGroupBox, QObject,
     QThread, QHBoxLayout, QPlainTextEdit, QEvent)
-from calibre.utils.logging import default_log as log
+from calibre.utils.logging import Log
 
 from ..lib.utils import traceback_error
 
@@ -12,6 +12,8 @@ from .alert import AlertMessage
 
 
 load_translations()
+
+log = Log()
 
 
 def request(func):
