@@ -84,6 +84,7 @@ class Translation:
         self.total = 0
         self.progress_bar = ProgressBar()
         self.abort_count = 0
+        self.total_token_usage = {"prompt": 0, "completion": 0, "total": 0}
 
     def set_fresh(self, fresh):
         self.fresh = fresh
@@ -186,6 +187,31 @@ class Translation:
             return
         # --- 檢查邏輯結束 ---
         translation = self.translate_text(paragraph.row, text)
+
+        # --- 累計並印出 Token ---
+        # 檢查 self.translator 是否有 last_token_usage 屬性
+
+        if hasattr(self.translator, "last_token_usage"):
+            usage = self.translator.last_token_usage
+            self.total_token_usage["prompt"] += usage.get("prompt", 0)
+            self.total_token_usage["completion"] += usage.get("completion", 0)
+            self.total_token_usage["total"] += usage.get("total", 0)
+
+            # --- 修改這裡的訊息格式 ---
+            # 建立一個更詳細、分開顯示的訊息
+            token_message = (
+                f"\n--- Vertex AI Token Usage ---\n"
+                f"  [Last Call]\n"
+                f"    Input  (Prompt): {usage.get('prompt', 0):,}\n"
+                f"    Output (Completion): {usage.get('completion', 0):,}\n"
+                f"  [Accumulated Total]\n"
+                f"    Total Input:  {self.total_token_usage['prompt']:,}\n"
+                f"    Total Output: {self.total_token_usage['completion']:,}\n"
+                f"    Grand Total:  {self.total_token_usage['total']:,}\n"
+                f"--------------------------"
+            )
+            print(token_message)
+        # --- 邏輯結束 ---
         # Process streaming text
         if isinstance(translation, GeneratorType):
             if self.total == 1:
